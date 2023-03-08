@@ -1,0 +1,80 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  SQS-Trigger-Lab
+
+Parameters:
+  QueueName:
+    Type: String
+    Default: LambdaTriggerQueue
+
+
+Resources:
+  DestinationBucket:
+      Type: 'AWS::S3::Bucket'
+      Properties:
+        BucketName: mysqslambda1982
+  
+  TriggerSQS:
+      Type: 'AWS::SQS::Queue'
+      Properties:
+        QueueName: !Ref QueueName
+
+  MyLambdaEventSourceMapping:
+      Type: 'AWS::Lambda::EventSourceMapping'
+      Properties:
+        EventSourceArn: !GetAtt TriggerSQS.Arn
+        FunctionName: !GetAtt TriggerLambda.Arn
+            
+
+  TriggerLambda:
+      Description: 'Lamdba for Trigger'
+      Type: 'AWS::Lambda::Function'
+      Properties:
+        Handler: index.lambda_handler
+        Runtime: python3.9
+        MemorySize: 128
+        Timeout: 3
+        Role: 'arn:aws:iam::696512064179:role/SQS-Message-Lab-Role'
+        Code:
+          ZipFile: |
+              import json
+
+              import boto3
+
+              def lambda_handler(event, context):
+
+                sqs_msg = json.loads(event['Records'][0]['body'])
+
+                print("SQS Message : ", sqs_msg)
+
+                bucket_name = "mysqslambda1982"
+
+                try:
+
+                    s3Client = boto3.client("s3", region_name= "us-east-1")
+
+                    Response = s3Client.put_object(Bucket= bucket_name, Key= "Message.json", Body= json.dumps(sqs_msg))
+
+                    print("S3 upload success !")
+
+                    return {
+
+                        "status" : 200,
+
+                        "body" : "S3 upload success"
+
+                    }
+
+                except Exception as e:
+
+                    print("Client connection to S3 failed because ", e)
+
+                    return{
+
+                        "status" : 500,
+
+                        "body" : "S3 upload failed"
+
+                    }
+        
