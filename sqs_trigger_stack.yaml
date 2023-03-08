@@ -13,7 +13,7 @@ Resources:
   DestinationBucket:
       Type: 'AWS::S3::Bucket'
       Properties:
-        BucketName: mysqslambda1982
+        BucketName: <<Bucket_Name>>
   
   TriggerSQS:
       Type: 'AWS::SQS::Queue'
@@ -35,7 +35,7 @@ Resources:
         Runtime: python3.9
         MemorySize: 128
         Timeout: 3
-        Role: 'arn:aws:iam::696512064179:role/SQS-Message-Lab-Role'
+        Role: '<<LambdaExecutionRole ARN>>'
         Code:
           ZipFile: |
               import json
@@ -48,7 +48,7 @@ Resources:
 
                 print("SQS Message : ", sqs_msg)
 
-                bucket_name = "mysqslambda1982"
+                bucket_name = "<<Bucket_Name>>"
 
                 try:
 
